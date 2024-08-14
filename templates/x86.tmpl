@@ -77,8 +77,8 @@ install ${configdir}/grub2-bios.cfg ${GRUB2DIR}/grub.cfg
     runcmd sh -c 'cat ${outroot}/grub2-bios-entry.cfg-entry >> ${outroot}/${GRUB2DIR}/grub.cfg'
     remove grub2-bios-entry.cfg-entry
 %endfor
-replace @PRODUCT@ '${product.name}' ${GRUB2DIR}/grub.cfg
 replace @VERSION@ ${product.version} ${GRUB2DIR}/grub.cfg
+replace @PRODUCT@ '${product.name}'  ${GRUB2DIR}/grub.cfg
 replace @KERNELNAME@ vmlinuz ${GRUB2DIR}/grub.cfg
 replace @XENPATH@ /${KERNELDIR}/xen.gz ${GRUB2DIR}/grub.cfg
 replace @KERNELPATH@ /${KERNELDIR}/vmlinuz ${GRUB2DIR}/grub.cfg

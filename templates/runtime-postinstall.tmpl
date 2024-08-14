@@ -54,7 +54,8 @@ remove usr/lib/tmpfiles.d/etc.conf
 
 ## Make logind activate anaconda-shell@.service on switch to empty VT
 symlink anaconda-shell@.service lib/systemd/system/autovt@.service
-replace "#ReserveVT=6" "ReserveVT=2" etc/systemd/logind.conf
+mkdir usr/lib/systemd/logind.conf.d
+append usr/lib/systemd/logind.conf.d/anaconda-shell.conf "[Login]\nReserveVT=2"
 
 ## Don't write the journal to the overlay, just keep it in RAM
 remove var/log/journal
@@ -65,7 +66,6 @@ install ${configdir}/i18n etc/sysconfig
 install ${configdir}/rsyslog.conf etc
 install ${configdir}/bash_history root/.bash_history
 install ${configdir}/profile root/.profile
-install ${configdir}/libuser.conf etc
 install ${configdir}/sysctl.conf etc/sysctl.d/anaconda.conf
 install ${configdir}/spice-vdagentd etc/sysconfig
 mkdir etc/NetworkManager/conf.d
@@ -121,21 +121,16 @@ remove etc/lvm/cache/*
 remove etc/lvm/cache
 remove etc/lvm/lvm.conf
 append etc/lvm/lvm.conf "global {\n\tuse_lvmetad = 1\n}\n"
+# dmeventd and event libraries are not installed
+append etc/lvm/lvm.conf "activation {\n\tmonitoring = 0\n}\n"
 
-## Record the package versions used to create the image
-## rpm initializes nss, which requires /dev/urandom to be present, hence the mknod
-runcmd chroot ${root} /usr/bin/mknod -m 666 /dev/random c 1 8
-runcmd chroot ${root} /usr/bin/mknod -m 666 /dev/urandom c 1 9
-runcmd chroot ${root} /usr/bin/rpm -qa --pipe "sort | tee /root/lorax-packages.log"
+## Remove machine specific nvme-cli files
+remove etc/nvme/hostid
+remove etc/nvme/hostnqn
 
 ## TODO: we could run prelink here if we wanted?
 
-## fix fontconfig cache containing timestamps
+## fix fonconfig cache containing timestamps
 runcmd chroot ${root} /usr/bin/find /usr/share/fonts -newermt "@${SOURCE_DATE_EPOCH}" -exec \
     touch --no-dereference --date="@${SOURCE_DATE_EPOCH}" {} +
 runcmd chroot ${root} /usr/bin/fc-cache -f
-
-## workaround https://github.com/util-linux/util-linux/issues/2434
-## let udev know manually when new device is attached
-## remove when util-linux >= 2.39.2 lands in
-runcmd sed -i 's/losetup -f.*/& \&\& udevadm trigger/' ${root}/usr/lib/dracut/modules.d/90dmsquash-live/iso-scan.sh

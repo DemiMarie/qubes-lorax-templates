@@ -1,16 +1,16 @@
 ## lorax template file: populate the ramdisk (runtime image)
 <%page args="basearch, product"/>
 <%
+# Version 1:2.06-3 of grub2 moves the font directory and is needed to keep the efi template from failing.
 GRUB2VER="1000:2.06-1"
 %>
 
 ## anaconda package
-installpkg anaconda anaconda-widgets kdump-anaconda-addon anaconda-install-img-deps
+installpkg anaconda anaconda-widgets
+## work around dnf5 bug - https://github.com/rpm-software-management/dnf5/issues/1111
+installpkg anaconda-install-img-deps>=40.15
 ## Other available payloads
 installpkg dnf
-## BEGIN QUBES OS SPECIFIC PART
-installpkg dnf-plugins-core
-## END QUBES OS SPECIFIC PART
 installpkg rpm-ostree ostree
 ## speed up compression on multicore systems
 installpkg pigz
@@ -30,7 +30,14 @@ installpkg grubby
     ## https://bugzilla.redhat.com/show_bug.cgi?id=2011615
     ## bfa-firmware contains only obsolete files - see
     ## https://bugzilla.redhat.com/show_bug.cgi?id=2152202
-    installpkg --optional *-firmware --except midisport-firmware \
+    ## qcom-firmware we pull in again lower down but *only* on aarch64, it is
+    ## no use on other arches - https://bugzilla.redhat.com/show_bug.cgi?id=2178852
+    ## various iwl package names were changed in linux-firmware-20230625-151
+    ## so need to be excluded or else dnf gets sad - see
+    ## https://pagure.io/releng/issue/11511 . These exclusions can
+    ## be dropped after F38 goes EOL . Ditto libertas separate packages
+    ## obsoleted in linux-firmware-20230804-152
+    installpkg --optional *-firmware --except alsa*-firmware --except midisport-firmware \
                            --except crystalhd-firmware --except ivtv-firmware \
                            --except cx18-firmware --except iscan-firmware \
                            --except uhd-firmware --except lulzbot-marlin-firmware \
@@ -38,7 +45,20 @@ installpkg grubby
                            --except liquidio-firmware --except netronome-firmware \
                            --except mrvlprestera-firmware --except mlxsw_spectrum-firmware \
                            --except hackrf-firmware --except python-virt-firmware \
-                           --except python3-virt-firmware
+                           --except python3-virt-firmware \
+                           --except iwl3945-firmware --except iwl4965-firmware \
+                           --except iwl100-firmware --except iwl105-firmware \
+                           --except iwl135-firmware --except iwl1000-firmware \
+                           --except iwl2000-firmware --except iwl2030-firmware \
+                           --except iwl5000-firmware --except iwl5150-firmware \
+                           --except iwl6000-firmware --except iwl6000g2a-firmware \
+                           --except iwl6000g2b-firmware --except iwl6050-firmware \
+                           --except iwl3160-firmware --except iwl7260-firmware \
+                           --except iwlax2xx-firmware \
+                           --except libertas-sd8686-firmware --except libertas-sd8787-firmware \
+                           --except libertas-usb8388-firmware \
+                           --except libertas-usb8388-olpc-firmware \
+                           --except qcom-firmware
     installpkg b43-openfwwf
 %endif
 ## BEGIN QUBES OS SPECIFIC PART
@@ -104,26 +124,13 @@ installpkg tar xz curl bzip2
 installpkg systemd-sysv systemd-units
 installpkg rsyslog
 
-## filesystem tools
-installpkg btrfs-progs jfsutils xfsprogs ntfs-3g ntfsprogs
-installpkg system-storage-manager
+## extra storage tools for rescue mode
 installpkg device-mapper-persistent-data
 installpkg xfsdump
-
-## extra storage packages
-# hostname is needed for iscsi to work, see RHBZ#1593917
-installpkg udisks2 udisks2-iscsi hostname
-
-## extra libblockdev plugins
-installpkg libblockdev-lvm-dbus
 
 ## needed for LUKS escrow
 installpkg volume_key
 installpkg nss-tools
-
-## blivet-gui-runtime requires PolicyKit-authentication-agent, if we
-## don't tell dnf what to pick it picks lxpolkit, which drags in gtk2
-installpkg polkit-gnome
 
 ## SELinux support
 installpkg selinux-policy-targeted audit
@@ -135,15 +142,13 @@ installpkg tigervnc-server-module
 installpkg net-tools
 installpkg bridge-utils
 installpkg nmap-ncat
+installpkg prefixdevname
 
 ## hardware utilities/libraries
 installpkg pciutils usbutils ipmitool
 installpkg mt-st smartmontools
 installpkg hdparm
-%if basearch not in ("aarch64", "ppc64le", "s390x"):
-installpkg pcmciautils
-%endif
-installpkg libmlx4 rdma-core
+installpkg rdma-core
 installpkg rng-tools
 %if basearch in ("x86_64", "aarch64"):
 installpkg dmidecode
@@ -154,29 +159,11 @@ installpkg qubes-release
 ## END QUBES OS SPECIFIC PART
 
 ## fonts & themes
-installpkg abattis-cantarell-vf-fonts
-installpkg google-noto-sans-vf-fonts google-noto-sans-mono-vf-fonts
-installpkg google-noto-sans-arabic-vf-fonts
-installpkg google-noto-sans-cjk-ttc-fonts
-installpkg google-noto-sans-ethiopic-vf-fonts google-noto-sans-georgian-vf-fonts
-installpkg google-noto-sans-gurmukhi-vf-fonts google-noto-sans-hebrew-vf-fonts
-installpkg google-noto-sans-sinhala-vf-fonts
-installpkg jomolhari-fonts
-installpkg khmer-os-system-fonts
-installpkg lohit-assamese-fonts
-installpkg lohit-bengali-fonts
-installpkg lohit-devanagari-fonts
-installpkg lohit-gujarati-fonts
-installpkg lohit-kannada-fonts
-installpkg lohit-marathi-fonts
-installpkg lohit-odia-fonts
-installpkg lohit-tamil-fonts
-installpkg lohit-telugu-fonts
-installpkg paktype-naskh-basic-fonts
-installpkg sil-padauk-fonts
-installpkg rit-meera-new-fonts
-installpkg thai-scalable-waree-fonts
-installpkg vazirmatn-vf-fonts
+installpkg default-fonts-core-sans
+installpkg default-fonts-other-sans
+## We can't go with this because google-noto-sans-cjk-vf-fonts is too big.
+# installpkg default-fonts-cjk-sans
+installpkg google-noto-sans-cjk-fonts
 
 ## BEGIN QUBES OS SPECIFIC PART
 installpkg qubes-artwork
@@ -192,7 +179,7 @@ installpkg python3-pyatspi
 ## extra tools not required by anaconda
 installpkg nano nano-default-editor
 installpkg vim-minimal strace lsof dump xz less
-installpkg wget rsync bind-utils ftp mtr vconfig
+installpkg wget2-wget rsync bind-utils ftp mtr vconfig
 ##installpkg spice-vdagent
 installpkg gdisk hexedit sg3_utils
 

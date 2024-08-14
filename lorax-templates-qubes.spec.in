@@ -10,6 +10,7 @@ Source0:	%{name}-%{version}.tar.bz2
 
 #BuildRequires:	
 Requires:	lorax
+Requires:	python3-packaging
 BuildArch:      noarch
 
 %description
