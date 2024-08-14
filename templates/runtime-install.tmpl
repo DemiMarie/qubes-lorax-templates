@@ -101,6 +101,11 @@ installpkg glibc-all-langpacks
 installpkg plymouth
 ## BEGIN QUBES OS SPECIFIC PART
 installpkg qubes-artwork-plymouth
+# removed from anaconda deps, install here manually (but not in the target system)
+installpkg NetworkManager
+installpkg NetworkManager-libnm
+installpkg systemd-resolved
+installpkg chrony
 ## END QUBES OS SPECIFIC PART
 
 ## extra dracut modules
